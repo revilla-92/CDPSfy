@@ -1,5 +1,5 @@
-var fs = require('fs');
 var track_model = require('./../models/track');
+var fs = require('fs');
 
 // Devuelve una lista de las canciones disponibles y sus metadatos
 exports.list = function (req, res) {
@@ -9,7 +9,9 @@ exports.list = function (req, res) {
 
 // Devuelve la vista del formulario para subir una nueva canción
 exports.new = function (req, res) {
-	res.render('tracks/new');
+	res.render('tracks/new', {
+       	errormessage: false
+    });
 };
 
 // Devuelve la vista de reproducción de una canción.
@@ -20,28 +22,81 @@ exports.show = function (req, res) {
 	res.render('tracks/show', {track: track});
 };
 
+
 // Escribe una nueva canción en el registro de canciones.
 // TODO:
 // - Escribir en tracks.cdpsfy.es el fichero de audio contenido en req.files.track.buffer
 // - Escribir en el registro la verdadera url generada al añadir el fichero en el servidor tracks.cdpsfy.es
 exports.create = function (req, res) {
+
+	// Recogemos la informacion de la track que vamos a subir.
 	var track = req.files.track;
 	console.log('Nuevo fichero de audio. Datos: ', track);
+
+	// Cogemos de la track la informacion del nombre y del formato para comprobacion de formato.
 	var id = track.name.split('.')[0];
 	var name = track.originalname.split('.')[0];
+	var format = track.originalname.split('.')[1];
 
-	// Aquí debe implementarse la escritura del fichero de audio (track.buffer) en tracks.cdpsfy.es
-	// Esta url debe ser la correspondiente al nuevo fichero en tracks.cdpsfy.es
-	var url = '/TODO';
+	console.log(id);
+	console.log(name);
+	console.log(format);
 
-	// Escribe los metadatos de la nueva canción en el registro.
-	track_model.tracks[id] = {
-		name: name,
-		url: url
-	};
 
-	res.redirect('/tracks');
+	// Comprobacion del formato (solo se admiten MP3, WAV y OGG)
+	if((format.toUpperCase() === "MP3") || (format.toUpperCase() === "WAV") || (format.toUpperCase() === "OGG")){
+		console.log("Formato correcto");
+
+		/* 
+			Como poner en el nombre de la URL el formato /media/NombreCancion.Formato podria darse el caso de que estuviera
+			repetida la cancion tendriamos dos URLs identicas (y a lo mejor canciones que se llamen igual pero diferentes). Por
+			ello crearemos una url con la fecha de creacion del fichero.
+		*/
+		var date = new Date();
+		var time = date.getTime();
+		var url = '/tracks/'+time.toString()+'.'+format;
+
+		// Aquí debe implementarse la escritura del fichero de audio (track.buffer) en tracks.cdpsfy.es
+		// Esta url debe ser la correspondiente al nuevo fichero en tracks.cdpsfy.es
+
+		console.log("FIJATE AQUI:");
+
+		var path = "/home/";
+
+		fs.stat(path, function(err, stats) {
+		    console.log(path);
+		    console.log();
+		    console.log(stats);
+		    console.log();
+		});
+
+
+		/*
+		fs.readFile('../public/media/Cute.mp3', 'utf8', function (err,data) {
+			if (err) {
+				return console.log(err);
+			}
+			console.log(data);
+		});
+
+		// Escribe los metadatos de la nueva canción en el registro.
+		track_model.tracks[id] = {
+			name: name,
+			url: url
+		};
+
+		res.redirect('/tracks');
+		*/
+
+	}else{
+		console.log("Formato incorrecto");
+		res.render('tracks/new', {
+        	errormessage: true
+    	});
+	}
+
 };
+
 
 // Borra una canción (trackId) del registro de canciones 
 // TODO:
